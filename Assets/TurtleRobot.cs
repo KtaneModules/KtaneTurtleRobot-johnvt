@@ -5,14 +5,6 @@ using System.Linq;
 using UnityEngine;
 using Rnd = UnityEngine.Random;
 
-/**
- * 
- * 
- * 
- * ADJUST CURSOR after delete!
- * 
- * 
- */ 
 public class TurtleRobot : MonoBehaviour
 {
     public KMSelectable ButtonUp;
@@ -23,18 +15,17 @@ public class TurtleRobot : MonoBehaviour
     private int _moduleId;
     private static int _moduleIdCounter = 1;
 
-    private enum Move { Fd, Lt, Rt }
+    private enum Verb { Fd, Lt, Rt }
     private enum MoveType { Line, Rotation, Arc }
 
-    private int[] _dir = { (int)Move.Lt, (int)Move.Rt };
+    private int[] _dir = { (int)Verb.Lt, (int)Verb.Rt };
     private int[] _dist = { 1, 2, 3, 4 };
     private int[] _distFactor = { 1, 2, 3, 4, 6 };
     private int _cursor = 0;
-    private List<List<int>> _instructions;
-    private List<int> _encoding1;
-    private List<string> _encoding2;
-    private Dictionary<string, List<List<int>>> _shapes;
+    private List<Command> _commands;
 
+    private Dictionary<string, List<Command>> _shapes;
+    private int[,,] _conversions;
     void Start()
     {
         _moduleId = _moduleIdCounter++;
@@ -43,261 +34,215 @@ public class TurtleRobot : MonoBehaviour
         ButtonDown.OnInteract += delegate () { PressArrow(1); return false; };
         ButtonDelete.OnInteract += delegate () { PressDelete(); return false; };
 
-        _shapes = new Dictionary<string, List<List<int>>>() {
-            { "spades", new List<List<int>>() {
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90, 2 },
-                new List<int>() { (int)Move.Rt, 180 },
-                new List<int>() { (int)Move.Lt, 90, 2 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Lt, 90, 2 },
-                new List<int>() { (int)Move.Rt, 180 },
-                new List<int>() { (int)Move.Fd, 6 },
-                new List<int>() { (int)Move.Rt, 180 },
-                new List<int>() { (int)Move.Lt, 90, 2 }
+        _shapes = new Dictionary<string, List<Command>>() {
+            { "spades", new List<Command>() {
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 180 },
+                new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 180 },
+                new Command() { Verb = Verb.Fd, Distance = 6 },
+                new Command() { Verb = Verb.Rt, Degrees = 180 },
+                new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 }
             } },
-            { "clubs", new List<List<int>>() {
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Lt, 90, 2 },
-                new List<int>() { (int)Move.Rt, 180 },
-                new List<int>() { (int)Move.Fd, 6 },
-                new List<int>() { (int)Move.Rt, 180 },
-                new List<int>() { (int)Move.Lt, 90, 2 }
+            { "clubs", new List<Command>() {
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 180 },
+                new Command() { Verb = Verb.Fd, Distance = 6 },
+                new Command() { Verb = Verb.Rt, Degrees = 180 },
+                new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 }
             } },
-            { "crown", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 150 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Lt, 120 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 120 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Lt, 120 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 150 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 6 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "crown", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 150 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Lt, Degrees = 120 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 120 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Lt, Degrees = 120 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 150 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 6 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "house", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 30 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 120 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 30 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "house", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 30 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 120 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 30 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "car", new List<List<int>>() {
-                new List<int>() { (int)Move.Rt, 90, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 90, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "car", new List<Command>() {
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "mushroom", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "mushroom", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "bottle", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 90, 1 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "bottle", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 1 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "sock", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 180, 1 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 90, 1 }
+            { "sock", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 1 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 1 }
             } },
-            { "tree", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "tree", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "tshirt", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Lt, 180, 1 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 3 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 }
+            { "tshirt", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Lt, Degrees = 180, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 3 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "tulip", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Rt, 90, 2 },
-                new List<int>() { (int)Move.Lt, 150 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 120 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Lt, 150 },
-                new List<int>() { (int)Move.Rt, 90, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Rt, 180, 3 }
+            { "tulip", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 150 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 120 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 150 },
+                new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 3 }
             } },
-            { "key", new List<List<int>>() {
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Rt, 180, 2 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 6 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 2 },
-                new List<int>() { (int)Move.Rt, 90 },
-                new List<int>() { (int)Move.Fd, 1 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Fd, 4 },
-                new List<int>() { (int)Move.Lt, 90 },
-                new List<int>() { (int)Move.Rt, 180, 2 }
+            { "key", new List<Command>() {
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 6 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 2 },
+                new Command() { Verb = Verb.Rt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 1 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Fd, Distance = 4 },
+                new Command() { Verb = Verb.Lt, Degrees = 90 },
+                new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 }
             } }
         };
 
-        /*
-        FOO L150
-        BAR L90
-        BAZ R60
-        FAM L
-        QUX L60
-        ZIF R180
-        YUB R30
-        YOG F
-        HEF R120
-        LUG L120
-        LIZ R150
-        RIS L30
-        NOM R
-        TIL L180
-        TOB R90
-         */
-
-        _encoding1 = new List<int>()
+        _conversions = new int[,,]
         {
-            (int)Move.Lt + 150,
-            (int)Move.Lt + 90,
-            (int)Move.Rt + 60,
-            (int)Move.Lt,
-            (int)Move.Lt + 60,
-            (int)Move.Rt + 180,
-            (int)Move.Rt + 30,
-            (int)Move.Fd,
-            (int)Move.Rt + 120,
-            (int)Move.Lt + 120,
-            (int)Move.Rt + 150,
-            (int)Move.Lt + 30,
-            (int)Move.Rt,
-            (int)Move.Lt + 180,
-            (int)Move.Rt + 90,
+            { { 0, 2 }, { 1, 4 }, { 3, 5 } },
+            { { 1, 3 }, { 0, 5 }, { 2, 4 } },
+            { { 1, 2 }, { 3, 5 }, { 0, 4 } },
+            { { 2, 5 }, { 3, 4 }, { 0, 1 } }
         };
 
-        _encoding2 = new List<string>()
-        {
-            "FOO",
-            "BAR",
-            "BAZ",
-            "FAM",
-            "QUX",
-            "ZIF",
-            "YUB",
-            "YOG",
-            "HEF",
-            "LUG",
-            "LIZ",
-            "RIS",
-            "NOM",
-            "TIL",
-            "TOB"
-        };
+        _commands = _shapes.ElementAt(Rnd.Range(0, _shapes.Count)).Value;
+        Debug.LogFormat("[Turtle Robot #{0}] Original instructions: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
-        _instructions = _shapes.ElementAt(Rnd.Range(0, _shapes.Count)).Value;
-        Debug.LogFormat("[Turtle Robot #{0}] Original instructions: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_instructions).ToArray()));
+        _commands = AddFaults(_commands);
+        Debug.LogFormat("[Turtle Robot #{0}] Added faults: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
-        _instructions = AddFaults(_instructions);
-        Debug.LogFormat("[Turtle Robot #{0}] Added faults: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_instructions).ToArray()));
+        _commands = Randomize(_commands);
+        Debug.LogFormat("[Turtle Robot #{0}] Module instructions: \n{1}", _moduleId, string.Join("\n", GetModuleInstructions(_commands).ToArray()));
 
-        _instructions = Randomize(_instructions);
-        Debug.LogFormat("[Turtle Robot #{0}] Module instructions: \n{1}", _moduleId, string.Join("\n", GetModuleInstructions(_instructions).ToArray()));
+
         UpdateDisplay();
     }
 
@@ -306,16 +251,16 @@ public class TurtleRobot : MonoBehaviour
         Display.GetComponent<TextMesh>().text = String.Join("\n", new string[] {
             "Turtle Robot",
             "============",
-            "  " + EncodeInstructions(_instructions[_cursor == 0 ? _instructions.Count() - 1 : _cursor - 1]),
-            "> " + EncodeInstructions(_instructions[_cursor]),
-            "  " + EncodeInstructions(_instructions[_cursor == _instructions.Count() - 1 ? 0  : _cursor + 1])
+            "  " + EncodeInstructions(_commands[_cursor == 0 ? _commands.Count() - 1 : _cursor - 1]),
+            "> " + EncodeInstructions(_commands[_cursor]),
+            "  " + EncodeInstructions(_commands[_cursor == _commands.Count() - 1 ? 0  : _cursor + 1])
         });
     }
 
     private string EncodeInstructions(List<int> list)
     {
-        int lookup = list[0] == (int)Move.Fd ? 0 : list[0] + list[1];
-        return _encoding2[_encoding1.IndexOf(lookup)] + (list.Count() == 3 ? " " + list[2] : "");
+        // For now only use first column
+        return ((char)(_conversions[0, list[0], Rnd.Range(0, 2)] + 65)).ToString() + "-" + list[1] + (list.Count() == 3 ? "-" + list[2] : "");
     }
 
     void Update()
@@ -323,7 +268,7 @@ public class TurtleRobot : MonoBehaviour
 
     }
 
-    private List<List<int>> AddFaults(List<List<int>> input)
+    private List<Command> AddFaults(List<Command> input)
     {
         var output = new List<List<int>>();
 
@@ -354,10 +299,10 @@ public class TurtleRobot : MonoBehaviour
 
             // Determine next instruction
             var next = input[i == input.Count - 1 ? 0 : i + 1];
-            var nextType = next[0] == (int)Move.Fd ? MoveType.Line : (next.Count() == 2 ? MoveType.Rotation : MoveType.Arc);
+            var nextType = next[0] == (int)Verb.Fd ? MoveType.Line : (next.Count() == 2 ? MoveType.Rotation : MoveType.Arc);
 
             // Forward instruction
-            if (input[i][0] == (int)Move.Fd)
+            if (input[i][0] == (int)Verb.Fd)
             {
                 // If it's not the smallest size, and chance wants it, split into two
                 if (input[i][1] > 1 && Rnd.Range(0, 2) == 0)
@@ -423,7 +368,7 @@ public class TurtleRobot : MonoBehaviour
                     if (Rnd.Range(0, 2) == 0)
                     {
                         Console.WriteLine("Splitting up and inserting a straight line.");
-                        output.Add(new List<int>() { (int)Move.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                        output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
                     }
                     else
                     {
@@ -457,7 +402,7 @@ public class TurtleRobot : MonoBehaviour
                         if (nextType == MoveType.Arc)
                         {
                             Console.WriteLine("Adding a straight line.");
-                            output.Add(new List<int>() { (int)Move.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                            output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
                         }
                         else
                         {
@@ -474,7 +419,7 @@ public class TurtleRobot : MonoBehaviour
                             if (Rnd.Range(0, 2) == 0)
                             {
                                 Console.WriteLine("Adding a straight line.");
-                                output.Add(new List<int>() { (int)Move.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                                output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
                             }
                             else
                             {
@@ -485,7 +430,7 @@ public class TurtleRobot : MonoBehaviour
                         else if (nextType == MoveType.Rotation)
                         {
                             Console.WriteLine("Adding a straight line.");
-                            output.Add(new List<int>() { (int)Move.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                            output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
                         }
                         else
                         {
@@ -500,18 +445,18 @@ public class TurtleRobot : MonoBehaviour
         return output;
     }
 
-    private List<List<int>> Randomize(List<List<int>> input)
+    private List<Command> Randomize(List<Command> input)
     {
         // Sometimes switch left and right
         if (Rnd.Range(0, 2) == 0)
         {
             Console.WriteLine("Switching left and right");
-            foreach (var instruction in input)
+            foreach (var command in input)
             {
-                if (instruction[0] == (int)Move.Lt)
-                    instruction[0] = (int)Move.Rt;
-                else if (instruction[0] == (int)Move.Rt)
-                    instruction[0] = (int)Move.Lt;
+                if (command.Verb == Verb.Lt)
+                    command.Verb = Verb.Rt;
+                else if (command.Verb == Verb.Rt)
+                    command.Verb = Verb.Lt;
             }
         }
 
@@ -525,25 +470,30 @@ public class TurtleRobot : MonoBehaviour
         // Apply random factor to the distances
         var factor = _distFactor[Rnd.Range(0, _distFactor.Count())];
         Console.WriteLine("Apllying factor " + factor);
-        foreach (var instruction in input)
-            if ((Move)instruction[0] == Move.Fd || instruction.Count == 3)
-                instruction[instruction.Count - 1] *= factor;
+        foreach (var command in input)
+            command.Distance *= factor;
 
         // Random starting point
         // 0, 1, 2, 3
         var num = Rnd.Range(0, input.Count());
         Console.WriteLine("Starting at " + (input.Count() - num));
-
         for (var i = 0; i < num; i++)
         {
             input.Insert(0, input[input.Count() - 1]);
             input.RemoveAt(input.Count() - 1);
         }
 
+        // Random code for display
+        foreach (Command command in input)
+        {
+            input.Code ((char)(_conversions[0, list[0], Rnd.Range(0, 2)] + 65)).ToString() + "-" + list[1] + (list.Count() == 3 ? "-" + list[2] : "");
+
+        }
+
         return input;
     }
 
-    private List<string> GetPencilCodeCommands(List<List<int>> instructions)
+    private List<string> GetPencilCodeCommands(List<Command> instructions)
     {
         var list = new List<string>
         {
@@ -555,8 +505,8 @@ public class TurtleRobot : MonoBehaviour
 
         foreach (var instruction in instructions)
         {
-            factor = (Move)instruction[0] == Move.Fd || instruction.Count == 3 ? 25 : 1;
-            var str = ((Move)instruction[0]).ToString().ToLower() + " ";
+            factor = (Verb)instruction[0] == Verb.Fd || instruction.Count == 3 ? 25 : 1;
+            var str = ((Verb)instruction[0]).ToString().ToLower() + " ";
             if (instruction.Count == 2)
                 str += (instruction[1] * factor);
             else
@@ -568,13 +518,13 @@ public class TurtleRobot : MonoBehaviour
         return list;
     }
 
-    private List<string> GetModuleInstructions(List<List<int>> instructions)
+    private List<string> GetModuleInstructions(List<Command> instructions)
     {
         var list = new List<string>();
 
         foreach (var instruction in instructions)
         {
-            var str = ((Move)instruction[0]).ToString() + " " + instruction[1];
+            var str = ((Verb)instruction[0]).ToString() + " " + instruction[1];
             if (instruction.Count == 3)
             {
                 str += " " + instruction[2];
@@ -588,14 +538,24 @@ public class TurtleRobot : MonoBehaviour
     private void PressArrow(int direction)
     {
         _cursor += direction;
-        if (_cursor >= _instructions.Count()) _cursor = 0;
-        else if (_cursor < 0) _cursor = _instructions.Count() - 1;
+        if (_cursor >= _commands.Count()) _cursor = 0;
+        else if (_cursor < 0) _cursor = _commands.Count() - 1;
         UpdateDisplay();
     }
 
     private void PressDelete()
     {
-        _instructions.RemoveAt(_cursor);
+        _commands.RemoveAt(_cursor);
+        if (_cursor >= _commands.Count()) _cursor = 0;
         UpdateDisplay();
+    }
+
+    class Command
+    {
+        public Verb Verb { get; set; }
+        public int Degrees { get; set; }
+        public int Distance { get; set; }
+        public string Code { get; set; }
+        public bool Bug { get; set; }
     }
 }
