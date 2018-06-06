@@ -18,8 +18,6 @@ public class TurtleRobot : MonoBehaviour
     private enum Verb { Fd, Lt, Rt }
     private enum MoveType { Line, Rotation, Arc }
 
-    private int[] _dir = { (int)Verb.Lt, (int)Verb.Rt };
-    private int[] _dist = { 1, 2, 3, 4 };
     private int[] _distFactor = { 1, 2, 3, 4, 6 };
     private int _cursor = 0;
     private List<Command> _commands;
@@ -234,13 +232,13 @@ public class TurtleRobot : MonoBehaviour
         };
 
         _commands = _shapes.ElementAt(Rnd.Range(0, _shapes.Count)).Value;
-        Debug.LogFormat("[Turtle Robot #{0}] Original instructions: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
+        Debug.LogFormat("[Turtle Robot #{0}] Original commands: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
-        _commands = AddFaults(_commands);
-        Debug.LogFormat("[Turtle Robot #{0}] Added faults: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
+        _commands = AddBugs(_commands);
+        Debug.LogFormat("[Turtle Robot #{0}] Added bugs: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
         _commands = Randomize(_commands);
-        Debug.LogFormat("[Turtle Robot #{0}] Module instructions: \n{1}", _moduleId, string.Join("\n", GetModuleInstructions(_commands).ToArray()));
+        Debug.LogFormat("[Turtle Robot #{0}] Randomized commands: \n{1}", _moduleId, string.Join("\n", GetModuleInstructions(_commands).ToArray()));
 
 
         UpdateDisplay();
@@ -251,16 +249,17 @@ public class TurtleRobot : MonoBehaviour
         Display.GetComponent<TextMesh>().text = String.Join("\n", new string[] {
             "Turtle Robot",
             "============",
-            "  " + EncodeInstructions(_commands[_cursor == 0 ? _commands.Count() - 1 : _cursor - 1]),
-            "> " + EncodeInstructions(_commands[_cursor]),
-            "  " + EncodeInstructions(_commands[_cursor == _commands.Count() - 1 ? 0  : _cursor + 1])
+            "  " + GetForDisplay(_commands[_cursor == 0 ? _commands.Count() - 1 : _cursor - 1]),
+            "> " + GetForDisplay(_commands[_cursor]),
+            "  " + GetForDisplay(_commands[_cursor == _commands.Count() - 1 ? 0  : _cursor + 1])
         });
     }
 
-    private string EncodeInstructions(List<int> list)
+    private string GetForDisplay(Command command)
     {
-        // For now only use first column
-        return ((char)(_conversions[0, list[0], Rnd.Range(0, 2)] + 65)).ToString() + "-" + list[1] + (list.Count() == 3 ? "-" + list[2] : "");
+        return command.Code
+            + (command.Degrees != 0 ? "-" + command.Degrees.ToString() : "")
+            + (command.Distance != 0 ? "-" + command.Distance.ToString() : "");
     }
 
     void Update()
@@ -268,85 +267,92 @@ public class TurtleRobot : MonoBehaviour
 
     }
 
-    private List<Command> AddFaults(List<Command> input)
+    private List<Command> AddBugs(List<Command> commands)
     {
-        var output = new List<List<int>>();
+        var result = new List<Command>();
 
-        // Determine two random breakpoints that are 3+ instructions apart
-        var breakpoints = new int[2];
-        int distance;
-        do
+        // Determine random breakpoints so they are 3+ instructions apart
+        var breakpoints = new int[3];
+        while (true)
         {
-            breakpoints[0] = Rnd.Range(0, input.Count);
-            breakpoints[1] = Rnd.Range(0, input.Count);
-            distance = new[] {
-                Math.Abs(breakpoints[0] - breakpoints[1]),
-                Math.Abs(breakpoints[0] + input.Count - breakpoints[1]),
-                Math.Abs(breakpoints[0] - breakpoints[1] + input.Count)
-            }.Min();
-        }
-        while (distance < 3);
-        Console.WriteLine("Breakpoints: " + breakpoints[0] + " and " + breakpoints[1]);
+            // Random breakpoints
+            for (var i = 0; i < breakpoints.Count(); i++)
+                breakpoints[i] = Rnd.Range(0, commands.Count);
 
-        for (var i = 0; i < input.Count; i++)
+            // For each pair check if they have enough distance between them
+            for (var i = 0; i < breakpoints.Count(); i++)
+                for (var j = 0; j < breakpoints.Count(); j++)
+                    if (GetMinDistance(breakpoints[i], breakpoints[j], breakpoints.Count()) < 3)
+                        continue;
+
+            // Yay!
+            break;
+
+        }
+        Console.WriteLine("Breakpoints: " + String.Join(", ", breakpoints.Select(x => x.ToString()).ToArray()));
+
+        foreach (var index in breakpoints)
+            commands[index].Bug = true;
+
+        for (var i = 0; i < commands.Count; i++)
         {
             // Not a breakpoint, just copy to new lines
-            if (!breakpoints.Contains(i))
+            if (!commands[i].Bug)
             {
-                output.Add(new List<int>(input[i]));
+                result.Add((Command)_commands[i].Clone());
                 continue;
             }
 
             // Determine next instruction
-            var next = input[i == input.Count - 1 ? 0 : i + 1];
-            var nextType = next[0] == (int)Verb.Fd ? MoveType.Line : (next.Count() == 2 ? MoveType.Rotation : MoveType.Arc);
+            var next = commands[i == commands.Count - 1 ? 0 : i + 1];
+            var nextType = next.Verb == Verb.Fd ? MoveType.Line : (next.Distance == 0 ? MoveType.Rotation : MoveType.Arc);
 
             // Forward instruction
-            if (input[i][0] == (int)Verb.Fd)
+            if (commands[i].Verb == Verb.Fd)
             {
                 // If it's not the smallest size, and chance wants it, split into two
-                if (input[i][1] > 1 && Rnd.Range(0, 2) == 0)
+                if (commands[i].Distance > 1 && Rnd.Range(0f, 1f) < .5)
                 {
                     // Determine split
-                    var firstPart = Rnd.Range(1, input[i][1]);
+                    var firstPart = Rnd.Range(1, commands[i].Distance);
 
                     // Add first part
-                    output.Add(new List<int>(input[i]));
-                    output[output.Count() - 1][1] = firstPart;
+                    result.Add((Command)commands[i].Clone());
+                    result[result.Count() - 1].Distance = firstPart;
 
-                    // Add random faulty part
-                    if (Rnd.Range(0, 2) == 0)
+                    // Add random bug
+                    if (Rnd.Range(0f, 1f) < .5)
                     {
                         Console.WriteLine("Splitting up and inserting a rotation.");
-                        output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90 });
+                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90 });
                     }
                     else
                     {
                         Console.WriteLine("Splitting up and inserting an arc.");
-                        output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90, _dist[Rnd.Range(0, _dist.Count())] });
+                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance() });
                     }
 
                     // Add second part
-                    output.Add(new List<int>(input[i]));
-                    output[output.Count() - 1][1] = input[i][1] - firstPart;
+                    result.Add((Command)(commands[i].Clone()));
+                    result[result.Count() - 1].Distance -= firstPart;
                 }
 
                 // Otherwise
                 else
                 {
                     // Add instruction
-                    output.Add(new List<int>(input[i]));
+                    result.Add((Command)commands[i].Clone());
 
-                    // Add faulty part
+                    // Add bug
                     if (nextType == MoveType.Arc)
                     {
                         Console.WriteLine("Adding a rotation.");
-                        output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90 });
+                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90 });
                     }
                     else
                     {
                         Console.WriteLine("Adding an arc.");
-                        output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90, _dist[Rnd.Range(0, _dist.Count())] });
+                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance() });
                     }
                 }
             }
@@ -354,60 +360,60 @@ public class TurtleRobot : MonoBehaviour
             // Rotate or arc instruction
             else
             {
-                // If it's not the smallest size, and chance wants it, split into two
-                if (input[i][1] > 90 && Rnd.Range(0, 2) == 0)
+                // If it's 180 degrees, and chance wants it, split into two
+                if (commands[i].Degrees == 180 && Rnd.Range(0f, 1f) < .5)
                 {
-                    // Determine split
-                    var firstPart = Rnd.Range(1, input[i][1] / 90) * 90;
-
                     // Add first part
-                    output.Add(new List<int>(input[i]));
-                    output[output.Count() - 1][1] = firstPart;
+                    result.Add((Command)commands[i].Clone());
+                    result[result.Count() - 1].Degrees = 90;
 
-                    // Add random faulty part
-                    if (Rnd.Range(0, 2) == 0)
+                    // Add random bug
+                    if (Rnd.Range(0f, 1f) < .5)
                     {
                         Console.WriteLine("Splitting up and inserting a straight line.");
-                        output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                        result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance() });
                     }
                     else
                     {
-                        if (input[i].Count() == 3)
-                        {
-                            Console.WriteLine("Splitting up and inserting a rotation.");
-                            output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90 });
-                        }
-                        else
+                        // If we are splitting up a rotation
+                        if (commands[i].Distance == 0)
                         {
                             Console.WriteLine("Splitting up and inserting an arc.");
-                            output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90, _dist[Rnd.Range(0, _dist.Count())] });
+                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance() });
+                        }
+
+                        // If we are splitting up an arc
+                        else
+                        {
+                            Console.WriteLine("Splitting up and inserting a rotation.");
+                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90 });
                         }
                     }
 
                     // Add second part
-                    output.Add(new List<int>(input[i]));
-                    output[output.Count() - 1][1] = input[i][1] - firstPart;
+                    result.Add((Command)commands[i].Clone());
+                    result[result.Count() - 1].Degrees = 90;
                 }
 
                 // Otherwise
                 else
                 {
                     // Add instruction
-                    output.Add(new List<int>(input[i]));
+                    result.Add((Command)commands[i].Clone());
 
-                    // Add faulty part
+                    // Add bug
                     // If this is a rotate
-                    if (input[i].Count() == 2)
+                    if (commands[i].Distance == 0)
                     {
                         if (nextType == MoveType.Arc)
                         {
                             Console.WriteLine("Adding a straight line.");
-                            output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                            result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance() });
                         }
                         else
                         {
                             Console.WriteLine("Adding an arc.");
-                            output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90, _dist[Rnd.Range(0, _dist.Count())] });
+                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance() });
                         }
                     }
 
@@ -416,39 +422,39 @@ public class TurtleRobot : MonoBehaviour
                     {
                         if (nextType == MoveType.Arc)
                         {
-                            if (Rnd.Range(0, 2) == 0)
+                            if (Rnd.Range(0f, 1f) < .5)
                             {
                                 Console.WriteLine("Adding a straight line.");
-                                output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                                result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance() });
                             }
                             else
                             {
                                 Console.WriteLine("Adding a rotation.");
-                                output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90 });
+                                result.Add(new Command() { Verb = LtOrRt(), Degrees = 90 });
                             }
                         }
                         else if (nextType == MoveType.Rotation)
                         {
                             Console.WriteLine("Adding a straight line.");
-                            output.Add(new List<int>() { (int)Verb.Fd, _dist[Rnd.Range(0, _dist.Count())] });
+                            result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance() });
                         }
                         else
                         {
                             Console.WriteLine("Adding a rotation.");
-                            output.Add(new List<int>() { _dir[Rnd.Range(0, _dir.Count())], 90 });
+                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90 });
                         }
                     }
                 }
             }
         }
 
-        return output;
+        return result;
     }
 
     private List<Command> Randomize(List<Command> input)
     {
         // Sometimes switch left and right
-        if (Rnd.Range(0, 2) == 0)
+        if (Rnd.Range(0f, 1f) < .5)
         {
             Console.WriteLine("Switching left and right");
             foreach (var command in input)
@@ -461,7 +467,7 @@ public class TurtleRobot : MonoBehaviour
         }
 
         // Sometimes reverse the order
-        if (Rnd.Range(0, 2) == 0)
+        if (Rnd.Range(0f, 1f) < .5)
         {
             Console.WriteLine("Reversing order");
             input.Reverse();
@@ -486,8 +492,7 @@ public class TurtleRobot : MonoBehaviour
         // Random code for display
         foreach (Command command in input)
         {
-            input.Code ((char)(_conversions[0, list[0], Rnd.Range(0, 2)] + 65)).ToString() + "-" + list[1] + (list.Count() == 3 ? "-" + list[2] : "");
-
+            command.Code = ((Char)(_conversions[0, (int)command.Verb, Rnd.Range(0, 2)] + 65)).ToString();
         }
 
         return input;
@@ -501,16 +506,12 @@ public class TurtleRobot : MonoBehaviour
             "pen black, 5"
         };
 
-        var factor = 1;
-
         foreach (var instruction in instructions)
         {
-            factor = (Verb)instruction[0] == Verb.Fd || instruction.Count == 3 ? 25 : 1;
-            var str = ((Verb)instruction[0]).ToString().ToLower() + " ";
-            if (instruction.Count == 2)
-                str += (instruction[1] * factor);
-            else
-                str += (instruction[1] + ", " + instruction[2] * factor);
+            var str = instruction.Verb.ToString().ToLower() + " "
+                + (instruction.Degrees > 0 ? instruction.Degrees.ToString() : "")
+                + (instruction.Degrees > 0 && instruction.Distance > 0 ? ", " : "")
+                + (instruction.Distance > 0 ? (instruction.Distance * 25).ToString() : "");
 
             list.Add(str);
         }
@@ -524,11 +525,9 @@ public class TurtleRobot : MonoBehaviour
 
         foreach (var instruction in instructions)
         {
-            var str = ((Verb)instruction[0]).ToString() + " " + instruction[1];
-            if (instruction.Count == 3)
-            {
-                str += " " + instruction[2];
-            }
+            var str = instruction.Code
+                + (instruction.Degrees > 0 ? "-" + instruction.Degrees.ToString() : "")
+                + (instruction.Distance > 0 ? "-" + instruction.Distance.ToString() : "");
             list.Add(str);
         }
 
@@ -550,12 +549,37 @@ public class TurtleRobot : MonoBehaviour
         UpdateDisplay();
     }
 
-    class Command
+    private int GetMinDistance(int a, int b, int length)
+    {
+        return new[] {
+            Math.Abs(a - b),
+            Math.Abs(a + length - b),
+            Math.Abs(a - b + length)
+        }.Min();
+    }
+
+    private Verb LtOrRt()
+    {
+        return Rnd.Range(0f, 1f) < .5 ? Verb.Lt : Verb.Rt;
+    }
+
+    private int RandomDistance()
+    {
+        var distances = new int[] { 1, 2, 3, 4 };
+        return distances[Rnd.Range(0, distances.Count())];
+    }
+
+    class Command : ICloneable
     {
         public Verb Verb { get; set; }
         public int Degrees { get; set; }
         public int Distance { get; set; }
         public string Code { get; set; }
         public bool Bug { get; set; }
+
+        public object Clone()
+        {
+            return this.MemberwiseClone();
+        }
     }
 }
