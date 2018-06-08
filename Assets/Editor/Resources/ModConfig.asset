@@ -31,4 +31,4 @@ MonoBehaviour:
     Module ID: turtleRobot'
   version: 1.0
   outputFolder: build
-  previewImage: {fileID: 0}
+  previewImage: {fileID: 2800000, guid: 13449361a8bbbd849901b42c370abb96, type: 3}
