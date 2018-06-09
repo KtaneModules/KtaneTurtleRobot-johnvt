@@ -605,32 +605,27 @@ public class TurtleRobot : MonoBehaviour
     }
 
 #pragma warning disable 414
-    private string TwitchHelpMessage = @"Use “!{0} up” to press the up button. Use “!{0} down 3” to press the down button three times. Comment out a bug at the current position by doing “!{0} comment”.";
+    private string TwitchHelpMessage = @"Use “!{0} up” to press the up button. Use “!{0} down 3” to press the down button three times.  Use “!{0} comment” to comment out the current position. Shortcuts: u, d, #.";
 #pragma warning restore 414
 
     IEnumerator ProcessTwitchCommand(string command)
     {
         var split = command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-        if (split[0] == "press" && (split[1] == "up" || split[1] == "down"))
+        if ((new string[] { "up", "u", "down", "d" }).Contains(split[0]))
         {
-            int amount = 0;
-            string direction = split[1];
+            int amount = 1;
 
-            if (split.Length == 2)
+            if (split.Length == 2 && "123456789".Contains(split[1]) && int.Parse(split[1]) < 17)
             {
-                amount = 1;
-            }
-            else if (split.Length == 3 && "123456789".Contains(split[2]) && int.Parse(split[2]) < 17)
-            {
-                amount = int.Parse(split[2]);
+                amount = int.Parse(split[1]);
             }
 
             yield return null;
 
             for (int x = 0; x < amount; x++)
             {
-                PressArrow(direction == "up" ? -1 : 1);
+                PressArrow((split[0] == "up" || split[0] == "u") ? -1 : 1);
                 yield return new WaitForSeconds(.1f);
             }
         }
