@@ -35,7 +35,7 @@ public class TurtleRobot : MonoBehaviour
         ButtonDelete.OnInteract += delegate () { PressDelete(); return false; };
 
         _shapes = new Dictionary<string, List<Command>>() {
-            { "spades", new List<Command>() {
+            { "Spades", new List<Command>() {
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
                 new Command() { Verb = Verb.Fd, Distance = 1 },
                 new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
@@ -51,7 +51,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Rt, Degrees = 180 },
                 new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 }
             } },
-            { "clubs", new List<Command>() {
+            { "Clubs", new List<Command>() {
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
                 new Command() { Verb = Verb.Fd, Distance = 1 },
                 new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
@@ -67,7 +67,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Rt, Degrees = 180 },
                 new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 2 }
             } },
-            { "crown", new List<Command>() {
+            { "Crown", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 150 },
                 new Command() { Verb = Verb.Fd, Distance = 3 },
@@ -83,7 +83,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 6 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "dog_house", new List<Command>() {
+            { "Dog house", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 30 },
                 new Command() { Verb = Verb.Fd, Distance = 4 },
@@ -101,7 +101,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 1 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "car", new List<Command>() {
+            { "Car", new List<Command>() {
                 new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 2 },
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
                 new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
@@ -119,7 +119,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 1 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "mushroom", new List<Command>() {
+            { "Mushroom", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 2 },
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
                 new Command() { Verb = Verb.Fd, Distance = 2 },
@@ -133,7 +133,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "bottle", new List<Command>() {
+            { "Bottle", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 1 },
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
@@ -149,7 +149,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 3 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "shape_shift", new List<Command>() {
+            { "Shape shift", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 2 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 },
                 new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 1 },
@@ -165,7 +165,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Lt, Degrees = 90, Distance = 1 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 },
             } },
-            { "tree", new List<Command>() {
+            { "Tree", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
                 new Command() { Verb = Verb.Fd, Distance = 1 },
@@ -181,7 +181,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 2 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "tshirt", new List<Command>() {
+            { "T-shirt", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
                 new Command() { Verb = Verb.Fd, Distance = 1 },
@@ -199,7 +199,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 }
             } },
-            { "tulip", new List<Command>() {
+            { "Tulip", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 90 },
                 new Command() { Verb = Verb.Rt, Degrees = 90, Distance = 2 },
@@ -213,7 +213,7 @@ public class TurtleRobot : MonoBehaviour
                 new Command() { Verb = Verb.Fd, Distance = 4 },
                 new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 3 }
             } },
-            { "key", new List<Command>() {
+            { "Key", new List<Command>() {
                 new Command() { Verb = Verb.Fd, Distance = 1 },
                 new Command() { Verb = Verb.Rt, Degrees = 180, Distance = 2 },
                 new Command() { Verb = Verb.Lt, Degrees = 90 },
@@ -231,17 +231,13 @@ public class TurtleRobot : MonoBehaviour
             } }
         };
 
-        _commands = _shapes.ElementAt(Rnd.Range(0, _shapes.Count)).Value;
-        //Debug.LogFormat("[Turtle Robot #{0}] Initial commands: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
+        var shape = _shapes.ElementAt(Rnd.Range(0, _shapes.Count));
 
-        _commands = AddBugs(_commands);
-        //Debug.LogFormat("[Turtle Robot #{0}] Add bugs: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
-
-        _commands = Randomize(_commands);
+        _commands = Randomize(AddBugs(shape.Value));
         //Debug.LogFormat("[Turtle Robot #{0}] Randomize: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
         _commands = RandomFactor(_commands);
-        Debug.LogFormat("[Turtle Robot #{0}] Solution, bugs marked with #:", _moduleId);
+        Debug.LogFormat("[Turtle Robot #{0}] Shape: {1}. Solution, bugs marked with #:", _moduleId, shape.Key);
         foreach (var command in _commands)
         {
             Debug.LogFormat("[Turtle Robot #{0}] - {1}", _moduleId, FormatCommand(command, true));
@@ -281,11 +277,6 @@ public class TurtleRobot : MonoBehaviour
             on = !on;
             Cursor.SetActive(on);
         }
-    }
-
-    void Update()
-    {
-
     }
 
     private List<Command> AddBugs(List<Command> commands)
@@ -586,6 +577,8 @@ public class TurtleRobot : MonoBehaviour
 
     private int RandomDistance()
     {
+        var rnd = Rnd.Range(0f, 1f);
+        if ()
         var distances = new int[] { 1, 2, 3, 4 };
         return distances[Rnd.Range(0, distances.Count())];
     }
