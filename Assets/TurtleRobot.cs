@@ -610,15 +610,20 @@ public class TurtleRobot : MonoBehaviour
 
     IEnumerator ProcessTwitchCommand(string command)
     {
-        var split = command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var split = command.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+
+	    if (split[0] == "press")
+	    {
+		    split = split.Skip(1).ToArray();
+	    }
 
         if ((new string[] { "up", "u", "down", "d" }).Contains(split[0]))
         {
             int amount = 1;
 
-            if (split.Length == 2 && "123456789".Contains(split[1]) && int.Parse(split[1]) < 17)
+            if (split.Length == 2 && (!int.TryParse(split[1], out amount) || amount < 1 || amount > 22))
             {
-                amount = int.Parse(split[1]);
+				yield break;
             }
 
             yield return null;
