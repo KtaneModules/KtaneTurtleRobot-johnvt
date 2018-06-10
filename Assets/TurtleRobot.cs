@@ -610,7 +610,7 @@ public class TurtleRobot : MonoBehaviour
 
     IEnumerator ProcessTwitchCommand(string command)
     {
-        var split = command.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+        var split = command.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
         if ((new string[] { "up", "u", "down", "d" }).Contains(split[0]))
         {
