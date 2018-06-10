@@ -612,6 +612,11 @@ public class TurtleRobot : MonoBehaviour
     {
         var split = command.ToLowerInvariant().Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
+	    if (split[0] == "press")
+	    {
+		    split = split.Skip(1).ToArray();
+	    }
+
         if ((new string[] { "up", "u", "down", "d" }).Contains(split[0]))
         {
             int amount = 1;
