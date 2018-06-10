@@ -621,9 +621,9 @@ public class TurtleRobot : MonoBehaviour
         {
             int amount = 1;
 
-            if (split.Length == 2 && "123456789".Contains(split[1]) && int.Parse(split[1]) < 17)
+            if (split.Length == 2 && (!int.TryParse(split[1], out amount) || amount < 1 || amount > 22))
             {
-                amount = int.Parse(split[1]);
+				yield break;
             }
 
             yield return null;
