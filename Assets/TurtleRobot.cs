@@ -234,7 +234,7 @@ public class TurtleRobot : MonoBehaviour
         var shape = _shapes.ElementAt(Rnd.Range(0, _shapes.Count));
 
         _commands = Randomize(AddBugs(shape.Value));
-        //Debug.LogFormat("[Turtle Robot #{0}] Randomize: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
+        Debug.LogFormat("[Turtle Robot #{0}] Pencil code: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
         _commands = RandomFactor(_commands);
         Debug.LogFormat("[Turtle Robot #{0}] Shape: {1}. Solution, bugs marked with #:", _moduleId, shape.Key);
@@ -285,8 +285,6 @@ public class TurtleRobot : MonoBehaviour
 
         // Determine random breakpoints so they are 3+ commands apart
         var breakpoints = new int[3];
-
-        // Random breakpoints
         TryAgain:
         for (var i = 0; i < breakpoints.Count(); i++)
             breakpoints[i] = Rnd.Range(0, commands.Count);
@@ -304,7 +302,7 @@ public class TurtleRobot : MonoBehaviour
             // Not a breakpoint, just copy to new lines
             if (!breakpoints.Contains(i))
             {
-                result.Add((Command)_commands[i].Clone());
+                result.Add((Command)commands[i].Clone());
                 continue;
             }
 
@@ -329,12 +327,12 @@ public class TurtleRobot : MonoBehaviour
                     if (Rnd.Range(0f, 1f) < .5)
                     {
                         //Debug.Log("Splitting up and inserting a rotation.");
-                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Bug = true });
+                        result.Add(RandomBug(MoveType.Rotation));
                     }
                     else
                     {
                         //Debug.Log("Splitting up and inserting an arc.");
-                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance(), Bug = true });
+                        result.Add(RandomBug(MoveType.Arc));
                     }
 
                     // Add second part
@@ -352,12 +350,12 @@ public class TurtleRobot : MonoBehaviour
                     if (nextType == MoveType.Arc)
                     {
                         //Debug.Log("Adding a rotation.");
-                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Bug = true });
+                        result.Add(RandomBug(MoveType.Rotation));
                     }
                     else
                     {
                         //Debug.Log("Adding an arc.");
-                        result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance(), Bug = true });
+                        result.Add(RandomBug(MoveType.Arc));
                     }
                 }
             }
@@ -376,7 +374,7 @@ public class TurtleRobot : MonoBehaviour
                     if (Rnd.Range(0f, 1f) < .5)
                     {
                         //Debug.Log("Splitting up and inserting a straight line.");
-                        result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance(), Bug = true });
+                        result.Add(RandomBug(MoveType.Line));
                     }
                     else
                     {
@@ -384,14 +382,14 @@ public class TurtleRobot : MonoBehaviour
                         if (commands[i].Distance == 0)
                         {
                             //Debug.Log("Splitting up and inserting an arc.");
-                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance(), Bug = true });
+                            result.Add(RandomBug(MoveType.Arc));
                         }
 
                         // If we are splitting up an arc
                         else
                         {
                             //Debug.Log("Splitting up and inserting a rotation.");
-                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Bug = true });
+                            result.Add(RandomBug(MoveType.Rotation));
                         }
                     }
 
@@ -413,12 +411,12 @@ public class TurtleRobot : MonoBehaviour
                         if (nextType == MoveType.Arc)
                         {
                             //Debug.Log("Adding a straight line.");
-                            result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance(), Bug = true });
+                            result.Add(RandomBug(MoveType.Line));
                         }
                         else
                         {
                             //Debug.Log("Adding an arc.");
-                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Distance = RandomDistance(), Bug = true });
+                            result.Add(RandomBug(MoveType.Arc));
                         }
                     }
 
@@ -430,23 +428,23 @@ public class TurtleRobot : MonoBehaviour
                             if (Rnd.Range(0f, 1f) < .5)
                             {
                                 //Debug.Log("Adding a straight line.");
-                                result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance(), Bug = true });
+                                result.Add(RandomBug(MoveType.Line));
                             }
                             else
                             {
                                 //Debug.Log("Adding a rotation.");
-                                result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Bug = true });
+                                result.Add(RandomBug(MoveType.Rotation));
                             }
                         }
                         else if (nextType == MoveType.Rotation)
                         {
                             //Debug.Log("Adding a straight line.");
-                            result.Add(new Command() { Verb = Verb.Fd, Distance = RandomDistance(), Bug = true });
+                            result.Add(RandomBug(MoveType.Line));
                         }
                         else
                         {
                             //Debug.Log("Adding a rotation.");
-                            result.Add(new Command() { Verb = LtOrRt(), Degrees = 90, Bug = true });
+                            result.Add(RandomBug(MoveType.Rotation));
                         }
                     }
                 }
@@ -454,6 +452,58 @@ public class TurtleRobot : MonoBehaviour
         }
 
         return result;
+    }
+
+    private Command RandomBug(MoveType moveType)
+    {
+        var command = new Command() { Bug = true };
+
+        if (moveType == MoveType.Line)
+        {
+            command.Verb = Verb.Fd;
+            /**
+             * 1: 15x   2
+             * 2: 15x   2
+             * 3:  7x   1
+             * 4: 21x   3
+             * 6:  4x   1
+             */
+            var distances = new int[] { 1, 1, 2, 2, 3, 4, 4, 4, 6 };
+            command.Distance = distances[Rnd.Range(0, distances.Count())];
+        }
+        else if (moveType == MoveType.Rotation)
+        {
+            command.Verb = Rnd.Range(0f, 1f) < .5 ? Verb.Lt : Verb.Rt;
+            /**
+             *  30:  4x  1
+             *  90: 56x  8
+             * 120:  6x  1
+             * 150:  4x  1
+             * 180:  5x  1
+             */
+            var degrees = new int[] { 30, 90, 90, 90, 90, 90, 90, 90, 90, 120, 150, 180 };
+            command.Degrees = degrees[Rnd.Range(0, degrees.Count())];
+        }
+        else if (moveType == MoveType.Arc)
+        {
+            command.Verb = Rnd.Range(0f, 1f) < .5 ? Verb.Lt : Verb.Rt;
+            /**
+             *  90: 14x  3
+             * 180: 19x  4
+             */
+            var degrees = new int[] { 90, 90, 90, 180, 180, 180, 180 };
+            command.Degrees = degrees[Rnd.Range(0, degrees.Count())];
+            /**
+             * 1: 10x   4
+             * 2: 21x   8
+             * 3:  1x   1
+             * 4:  1x   1
+             */
+            var distances = new int[] { 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 3, 4 };
+            command.Distance = distances[Rnd.Range(0, distances.Count())];
+        }
+
+        return command;
     }
 
     private List<Command> RandomFactor(List<Command> input)
@@ -568,19 +618,6 @@ public class TurtleRobot : MonoBehaviour
             Math.Abs(a + length - b),
             Math.Abs(a - length - b)
         }.Min();
-    }
-
-    private Verb LtOrRt()
-    {
-        return Rnd.Range(0f, 1f) < .5 ? Verb.Lt : Verb.Rt;
-    }
-
-    private int RandomDistance()
-    {
-        var rnd = Rnd.Range(0f, 1f);
-        if ()
-        var distances = new int[] { 1, 2, 3, 4 };
-        return distances[Rnd.Range(0, distances.Count())];
     }
 
     class Command : ICloneable
