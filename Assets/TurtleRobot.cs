@@ -237,7 +237,8 @@ public class TurtleRobot : MonoBehaviour
         Debug.LogFormat("[Turtle Robot #{0}] Pencil code: \n{1}", _moduleId, string.Join("\n", GetPencilCodeCommands(_commands).ToArray()));
 
         _commands = RandomFactor(_commands);
-        Debug.LogFormat("[Turtle Robot #{0}] Shape: {1}. Solution, bugs marked with #:", _moduleId, shape.Key);
+        Debug.LogFormat("[Turtle Robot #{0}] Shape: {1}.", _moduleId, shape.Key);
+        Debug.LogFormat("[Turtle Robot #{0}] Solution, bugs marked with #:", _moduleId);
         foreach (var command in _commands)
         {
             Debug.LogFormat("[Turtle Robot #{0}] - {1}", _moduleId, FormatCommand(command, true));
@@ -314,7 +315,7 @@ public class TurtleRobot : MonoBehaviour
             if (commands[i].Verb == Verb.Fd)
             {
                 // If it's not the smallest size, and chance wants it, split into two
-                if (commands[i].Distance > 1 && Rnd.Range(0f, 1f) < .5)
+                if (commands[i].Distance > 1 && Rnd.Range(0f, 1f) < .8)
                 {
                     // Determine split
                     var firstPart = Rnd.Range(1, commands[i].Distance);
@@ -360,11 +361,11 @@ public class TurtleRobot : MonoBehaviour
                 }
             }
 
-            // Rotate or arc command
-            else
+            // Rotate
+            else if (commands[i].Distance == 0)
             {
                 // If it's 180 degrees, and chance wants it, split into two
-                if (commands[i].Degrees == 180 && Rnd.Range(0f, 1f) < .5)
+                if (commands[i].Degrees == 180 && Rnd.Range(0f, 1f) < .8)
                 {
                     // Add first part
                     result.Add((Command)commands[i].Clone());
@@ -378,19 +379,83 @@ public class TurtleRobot : MonoBehaviour
                     }
                     else
                     {
-                        // If we are splitting up a rotation
-                        if (commands[i].Distance == 0)
-                        {
-                            //Debug.Log("Splitting up and inserting an arc.");
-                            result.Add(RandomBug(MoveType.Arc));
-                        }
+                        //Debug.Log("Splitting up and inserting an arc.");
+                        result.Add(RandomBug(MoveType.Arc));
+                    }
 
-                        // If we are splitting up an arc
-                        else
-                        {
-                            //Debug.Log("Splitting up and inserting a rotation.");
-                            result.Add(RandomBug(MoveType.Rotation));
-                        }
+                    // Add second part
+                    result.Add((Command)commands[i].Clone());
+                    result[result.Count() - 1].Degrees = 90;
+                }
+
+                // If it's 90 degrees, and chance wants it, split into 180 and 90 back
+                else if (commands[i].Degrees == 90 && Rnd.Range(0f, 1f) < .2)
+                {
+                    // Add first part
+                    result.Add((Command)commands[i].Clone());
+
+                    // Add random arc (to prevent drawing over the same line)
+                    //Debug.Log("Splitting up and inserting an arc.");
+                    result.Add(RandomBug(MoveType.Arc));
+
+                    // Add second part
+                    result.Add((Command)commands[i].Clone());
+
+                    // First 180 then 90 back or the other way around?
+                    if (Rnd.Range(0f, 1f) < .5)
+                    {
+                        result[result.Count() - 3].Degrees = 90;
+                        result[result.Count() - 3].Verb = (result[result.Count() - 3].Verb == Verb.Lt ? Verb.Rt : Verb.Lt);
+                        result[result.Count() - 1].Degrees = 180;
+                    }
+                    else
+                    {
+                        result[result.Count() - 3].Degrees = 180;
+                        result[result.Count() - 1].Degrees = 90;
+                        result[result.Count() - 1].Verb = (result[result.Count() - 3].Verb == Verb.Lt ? Verb.Rt : Verb.Lt);
+                    }
+                }
+
+                // Otherwise
+                else
+                {
+                    // Add command
+                    result.Add((Command)commands[i].Clone());
+
+                    // Add bug
+                    if (nextType == MoveType.Arc)
+                    {
+                        //Debug.Log("Adding a straight line.");
+                        result.Add(RandomBug(MoveType.Line));
+                    }
+                    else
+                    {
+                        //Debug.Log("Adding an arc.");
+                        result.Add(RandomBug(MoveType.Arc));
+                    }
+                }
+            }
+
+            // Arc command
+            else
+            {
+                // If it's 180 degrees, and chance wants it, split into two
+                if (commands[i].Degrees == 180 && Rnd.Range(0f, 1f) < .7)
+                {
+                    // Add first part
+                    result.Add((Command)commands[i].Clone());
+                    result[result.Count() - 1].Degrees = 90;
+
+                    // Add random bug
+                    if (Rnd.Range(0f, 1f) < .5)
+                    {
+                        //Debug.Log("Splitting up and inserting a straight line.");
+                        result.Add(RandomBug(MoveType.Line));
+                    }
+                    else
+                    {
+                        //Debug.Log("Splitting up and inserting a rotation.");
+                        result.Add(RandomBug(MoveType.Rotation));
                     }
 
                     // Add second part
@@ -405,38 +470,10 @@ public class TurtleRobot : MonoBehaviour
                     result.Add((Command)commands[i].Clone());
 
                     // Add bug
-                    // If this is a rotate
-                    if (commands[i].Distance == 0)
-                    {
-                        if (nextType == MoveType.Arc)
-                        {
-                            //Debug.Log("Adding a straight line.");
-                            result.Add(RandomBug(MoveType.Line));
-                        }
-                        else
-                        {
-                            //Debug.Log("Adding an arc.");
-                            result.Add(RandomBug(MoveType.Arc));
-                        }
-                    }
-
                     // If this is an arc
-                    else
+                    if (nextType == MoveType.Arc)
                     {
-                        if (nextType == MoveType.Arc)
-                        {
-                            if (Rnd.Range(0f, 1f) < .5)
-                            {
-                                //Debug.Log("Adding a straight line.");
-                                result.Add(RandomBug(MoveType.Line));
-                            }
-                            else
-                            {
-                                //Debug.Log("Adding a rotation.");
-                                result.Add(RandomBug(MoveType.Rotation));
-                            }
-                        }
-                        else if (nextType == MoveType.Rotation)
+                        if (Rnd.Range(0f, 1f) < .5)
                         {
                             //Debug.Log("Adding a straight line.");
                             result.Add(RandomBug(MoveType.Line));
@@ -446,6 +483,16 @@ public class TurtleRobot : MonoBehaviour
                             //Debug.Log("Adding a rotation.");
                             result.Add(RandomBug(MoveType.Rotation));
                         }
+                    }
+                    else if (nextType == MoveType.Rotation)
+                    {
+                        //Debug.Log("Adding a straight line.");
+                        result.Add(RandomBug(MoveType.Line));
+                    }
+                    else
+                    {
+                        //Debug.Log("Adding a rotation.");
+                        result.Add(RandomBug(MoveType.Rotation));
                     }
                 }
             }
