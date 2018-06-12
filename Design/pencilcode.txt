@@ -1,0 +1,206 @@
+shapes = [
+  spades = -> #14
+    jumpto -11, -9
+    lt 90
+    fd 1
+    rt 180, 2
+    lt 90, 2
+    rt 180
+    lt 90, 2
+    rt 180, 2
+    fd 1
+    lt 90
+    lt 90, 2
+    rt 180
+    fd 6
+    rt 180
+    lt 90, 2
+  clubs = -> #16
+    jumpto 11, 7
+    lt 90
+    fd 1
+    rt 180, 2
+    lt 90
+    rt 180, 2
+    lt 90
+    rt 180, 2
+    fd 1
+    lt 90
+    lt 90, 2
+    rt 180
+    fd 6
+    rt 180
+    lt 90, 2
+  crown = -> #14
+    jumpto -13, -1
+    fd 4
+    rt 150
+    fd 3
+    lt 120
+    fd 3
+    rt 120
+    fd 3
+    lt 120
+    fd 3
+    rt 150
+    fd 4
+    rt 90
+    fd 6
+    rt 90
+  dog_house = -> #16
+    jumpto -4, -12
+    fd 4
+    rt 30
+    fd 4
+    rt 120
+    fd 4
+    rt 30
+    fd 4
+    rt 90
+    fd 1
+    rt 90
+    fd 2
+    lt 180, 1
+    fd 2
+    rt 90
+    fd 1
+    rt 90
+  car = -> #16
+    jumpto -5, -2
+    rt 90, 2
+    lt 90
+    rt 180, 2
+    lt 90
+    rt 90, 2
+    rt 90
+    fd 1
+    lt 90
+    rt 180, 1
+    lt 90
+    fd 2
+    lt 90
+    rt 180, 1
+    lt 90
+    fd 1
+    rt 90
+  mushroom = -> #12
+    jumpto -14, 5
+    fd 2
+    lt 90
+    fd 2
+    rt 90
+    rt 180, 4
+    rt 90
+    fd 2
+    lt 90
+    fd 2
+    rt 90
+    fd 4
+    rt 90
+  bottle = -> #14
+    jumpto 11, -10
+    fd 4
+    rt 90, 1
+    lt 90
+    fd 3
+    rt 90
+    fd 1
+    rt 90
+    fd 3
+    lt 90
+    rt 90, 1
+    fd 4
+    rt 90
+    fd 3
+    rt 90
+  shape_shift = -> #14
+    jumpto 5, 0
+    fd 2
+    rt 90
+    lt 90, 1
+    rt 90
+    fd 4
+    rt 30
+    fd 4
+    rt 120
+    fd 4
+    rt 30
+    fd 4
+    rt 90
+    lt 90, 1
+    rt 90
+  tree = -> #14
+    jumpto 4, -14
+    fd 4
+    lt 90
+    fd 1
+    rt 180, 2
+    lt 90
+    rt 180, 2
+    lt 90
+    rt 180, 2
+    fd 1
+    lt 90
+    fd 4
+    rt 90
+    fd 2
+    rt 90
+  tshirt = -> #16
+    jumpto -7, 10
+    fd 4
+    lt 90
+    fd 1
+    rt 180, 1
+    fd 2
+    rt 90
+    lt 180, 1
+    rt 90
+    fd 2
+    rt 180, 1
+    fd 1
+    lt 90
+    fd 4
+    rt 90
+    fd 4
+    rt 90
+  tulip = -> #12
+    jumpto 1, 12
+    fd 4
+    rt 90
+    rt 90, 2
+    lt 150
+    fd 2
+    rt 120
+    fd 2
+    lt 150
+    rt 90, 2
+    rt 90
+    fd 4
+    rt 180, 3
+  key = -> #14
+    jumpto -5, 5
+    fd 1
+    rt 180, 2
+    lt 90
+    fd 6
+    rt 90
+    fd 2
+    rt 90
+    fd 2
+    rt 90
+    fd 1
+    lt 90
+    fd 4
+    lt 90
+    rt 180, 2
+]
+
+factor = 25
+
+hide()
+speed Infinity
+scale(factor)
+
+pen black, 5/factor
+for shape in shapes
+  do shape
