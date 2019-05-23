@@ -707,7 +707,7 @@ public class TurtleRobot : MonoBehaviour
 
             for (int x = 0; x < amount; x++)
             {
-                PressArrow((split[0] == "up" || split[0] == "u") ? -1 : 1);
+                ((split[0] == "up" || split[0] == "u") ? ButtonUp : ButtonDown).OnInteract();
                 yield return new WaitForSeconds(.1f);
             }
         }
@@ -715,7 +715,7 @@ public class TurtleRobot : MonoBehaviour
         if (split.Length == 1 && split[0] == "comment" || split[0] == "#")
         {
             yield return null;
-            PressDelete();
+            ButtonDelete.OnInteract();
         }
     }    
 }
